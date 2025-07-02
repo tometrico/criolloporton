@@ -1022,10 +1022,7 @@ let letras="desde mi esp32";
   }
 
   function toggle(){
-    //websocket.send('Z');
-    //websocket.send('A');
-    //websocket.send('P');
-    //websocket.send('E');
+
     letras=document.getElementById("PASSWORD1");
     websocket.send(letras.value);
 
@@ -1169,7 +1166,10 @@ char REGISTRAR[] PROGMEM = R"rawliteral(
     <div class="card">
     <!--     <form action='http://192.168.4.2/PORTON/index.php' method="POST">--> 
 
-    <form action='http://192.168.4.2/PORTON/index2.php' method="POST"> 
+    <!--   <form action='http://192.168.4.2/PORTON/index2.php' method="POST">-->
+
+     <form action='http://192.168.4.1' method="POST">
+     
       <h2>FORMULARIO</h2>
       <br>
       <h2>CEDULA:<input type="int", name="CI" min="12" max="120" required ></h2>
@@ -1875,6 +1875,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
  
   DIRECCION_IP = (client->remoteIP().toString().c_str());
   Serial.printf("LECTURA DE  DIRECCION IP  %s\n", DIRECCION_IP);
+   esp_task_wdt_reset();  //SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
   identidad();
 
   switch (type) {
@@ -1984,14 +1985,15 @@ Serial.print(DIRECCION_IP[10]);
     case WS_EVT_DATA:
 
       //DIRECCION_IP=(client->remoteIP().toString().c_str());
-      //Serial.println("---------------------------------------------------------------------------------");
-      //Serial.printf("ALGUIEN A PULSADO UN BOTON FUE %s\n",  client->remoteIP().toString().c_str());
-      //Serial.printf("LISTADO DE INFORMACION\n");
+      Serial.println("---------------------------------------------------------------------------------");
+      Serial.printf("ALGUIEN A PULSADO UN BOTON FUE %s\n",  client->remoteIP().toString().c_str());
+      Serial.printf("LISTADO DE INFORMACION\n");
       for (int i = 0; i < NUN_CLIENT; i++) {
-        //Serial.printf("ip %s  con direccion macc    %d:%d:%d:%d:%d:%d   ACCESO TIPO :%d \n",GOBIERNO.SUMERIO_IP[i],GOBIERNO.SUMERIO_MAC[i][0],GOBIERNO.SUMERIO_MAC[i][1],GOBIERNO.SUMERIO_MAC[i][2],GOBIERNO.SUMERIO_MAC[i][3],GOBIERNO.SUMERIO_MAC[i][4],GOBIERNO.SUMERIO_MAC[i][5],GOBIERNO.SUMERIO_ACCESO[i]);
+        Serial.printf("ip %s  con direccion macc    %d:%d:%d:%d:%d:%d   ACCESO TIPO :%d \n",GOBIERNO.SUMERIO_IP[i],GOBIERNO.SUMERIO_MAC[i][0],GOBIERNO.SUMERIO_MAC[i][1],GOBIERNO.SUMERIO_MAC[i][2],GOBIERNO.SUMERIO_MAC[i][3],GOBIERNO.SUMERIO_MAC[i][4],GOBIERNO.SUMERIO_MAC[i][5],GOBIERNO.SUMERIO_ACCESO[i]);
 
-        if (GOBIERNO.SUMERIO_MAC[i][0] == 0)  //ESTO SUCEDE CUANDO HAY ERROR DE LECTURA SE PROCEDE A RESETEAR AUTOMATICAMENTE EL CHIP ES UN PROBLEMA INTERNO DEL DISPOSITIVO
-        {
+      if ((GOBIERNO.SUMERIO_MAC[i][0] == 0)&&(GOBIERNO.SUMERIO_MAC[i][1] == 0)&&(GOBIERNO.SUMERIO_MAC[i][2] == 0))  //ESTO SUCEDE CUANDO HAY ERROR DE LECTURA SE PROCEDE A RESETEAR AUTOMATICAMENTE EL CHIP ES UN PROBLEMA INTERNO DEL DISPOSITIVO
+            {
+          Serial.printf("INCONGRUENCIA EN LA MAC ADDRES SE VA A RESETEAR");
           ESP.restart();  //SE REALIZA UN RESETEO AUTOMATICO PARA CARGAR EL SISTEMA CON LOS NUEVOS DATOS
         }
 
@@ -2178,11 +2180,12 @@ void CAPTURAR(size_t len, uint8_t *data) {
 void identidad()  //ESTA FUNCION VERIFICA QUIENES SE HAN CONECTADO A LA RED
 {
   // Serial.println("viendo quien esta aqui);
-  //Serial.printf("BUSCANDO QUIEN ESTA AQUI\n");
+  Serial.printf("BUSCANDO QUIEN ESTA AQUI\n");
   for (int i = 0; i < NUN_CLIENT; i++) {
     //Serial.printf("ip %s  con direccion macc    %d:%d:%d:%d:%d:%d   ACCESO TIPO :%d \n",GOBIERNO.SUMERIO_IP[i],GOBIERNO.SUMERIO_MAC[i][0],GOBIERNO.SUMERIO_MAC[i][1],GOBIERNO.SUMERIO_MAC[i][2],GOBIERNO.SUMERIO_MAC[i][3],GOBIERNO.SUMERIO_MAC[i][4],GOBIERNO.SUMERIO_MAC[i][5],GOBIERNO.SUMERIO_ACCESO[i]);
-    if (GOBIERNO.SUMERIO_MAC[i][0] == 0)  //ESTO SUCEDE CUANDO HAY ERROR DE LECTURA SE PROCEDE A RESETEAR AUTOMATICAMENTE EL CHIP ES UN PROBLEMA INTERNO DEL DISPOSITIVO
+    if ((GOBIERNO.SUMERIO_MAC[i][0] == 0)&&(GOBIERNO.SUMERIO_MAC[i][1] == 0)&&(GOBIERNO.SUMERIO_MAC[i][2] == 0))  //ESTO SUCEDE CUANDO HAY ERROR DE LECTURA SE PROCEDE A RESETEAR AUTOMATICAMENTE EL CHIP ES UN PROBLEMA INTERNO DEL DISPOSITIVO
     {
+      Serial.printf("AQUI SE PRESENTO UN PROBLEMA DE MAC ADDRESS INCONGRUENTE\n");
       ESP.restart();  //SE REALIZA UN RESETEO AUTOMATICO PARA CARGAR EL SISTEMA CON LOS NUEVOS DATOS
     }
 
@@ -2233,7 +2236,7 @@ void setup() {
     Serial.println("SPIFFS FALLA AL MONTAR LOS ARCHIVOS REVISE SISTEMA");
   }
 
-  //writeFile(SPIFFS, "/hello.txt", "Hola ");
+  //writeFile(SPIFFS, "/hello.txt", "Hola "); //NOTA IMPORTANTE CON ACTIVANDO ESTE CODIGO SE BORRA EL ARCHIVO HELLO.TXT CUANDO SEA NECESARIO O INCLUSIVE CUANDO SE COLOQUE UN CHIP VIRGEN QUE NO TENGA EL ARCHIVO
   listDir(SPIFFS, "/", 0);
   Serial.println("MOSTRANDO EL CONTENIDO DEL ARCHIVO HELLO.TXT");
   readFile(SPIFFS, "/hello.txt");
@@ -2242,7 +2245,7 @@ void setup() {
   CARGADOR(SPIFFS, "/hello.txt");  //SE GRABAN LOS DATOS DEL ARCHIVO INTERNO AL ARRAY PERMISO EL CUAL CONTIENE LOS CLIENTES AUTORIZADOS
   TOTAL_ABONA2 = LINEA;
 
-  readFile2(SPIFFS, "/hello.txt");
+  readFile2(SPIFFS, "/hello.txt");//SE PROCEDE A LA LECTURA DEL ARCHIVO HELLO.TXT
   //writeFile(SPIFFS, "/hello.txt", "abc ");
   //appendFile(SPIFFS, "/hello.txt", "Mundo Cruel\r\n");
   //readFile2(SPIFFS, "/hello.txt");
@@ -2261,7 +2264,7 @@ void setup() {
     //deleteFile(SPIFFS, "/test.txt");
     Serial.println( "PRUEBA COMPLETADA" );
 */
-  //MAC ADDRESS DEL PRIMER CLIENTE AUTORIZADO CESAR
+  //MAC ADDRESS DEL PRIMER CLIENTE AUTORIZADO CESAR ESTO ES OPCIONAL Y DEBERIA BORRARSE A FUTURO
   permiso[0][0] = 152;
   permiso[0][1] = 246;
   permiso[0][2] = 33;
@@ -2400,19 +2403,21 @@ void loop() {
   //ONLY_ONE =0; no retornarlo a cero por que solo grabara la ultima linea
 
   if (STATUS_PAGE == 1) {
-    HERON();  //ESTE LLAMADO ES A LA FUNCION QUE SE ENCARGA DE MOVER EL MOTOR APERTURA DEL PORTON
+    // HERON();  //ESTE LLAMADO ES A LA FUNCION QUE SE ENCARGA DE MOVER EL MOTOR APERTURA DEL PORTON
+    //Serial.println("_____________ACTIVANDO EL MOTOR____________________");
   }
 
   if (STATUS_PAGE == 4) {
-    //Serial.println("_____________MOSTRANDO LA MAC A ENVIAR____________________");
-    //Serial.printf("DIRECCION MAC_ADDRESS: %d:%d:%d:%d:%d:%d \n",NUEVOMAC[0],NUEVOMAC[1],NUEVOMAC[2],NUEVOMAC[3],NUEVOMAC[4],NUEVOMAC[5]);
+    Serial.println("_____________MOSTRANDO LA MAC A ENVIAR____________________");
+    Serial.printf("DIRECCION MAC_ADDRESS: %d:%d:%d:%d:%d:%d \n",NUEVOMAC[0],NUEVOMAC[1],NUEVOMAC[2],NUEVOMAC[3],NUEVOMAC[4],NUEVOMAC[5]);
+    Serial.printf("DIRECCION MAC_ADDRESS: %d:%d:%d:%d:%d:%d \n",GOBIERNO.SUMERIO_MAC[RESTO][0],GOBIERNO.SUMERIO_MAC[RESTO][1],GOBIERNO.SUMERIO_MAC[RESTO][2],GOBIERNO.SUMERIO_MAC[RESTO][3],GOBIERNO.SUMERIO_MAC[RESTO][4],GOBIERNO.SUMERIO_MAC[RESTO][5]);
 
-    esp_task_wdt_reset();  //SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
+    //esp_task_wdt_reset();  //SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
 
     ALEATORIO();           //SE ENVIA UN GRUPO DE NUMEROS ALEATORIOS PARA LUEGO SER RESUELTOS
     SEND_MAC();            //SE ENVIA LA MAC_ADDRESS DEL SISTEMA DEL ULTIMO EQUIPO CONECTADO AL SISTEMA
-    esp_task_wdt_reset();  //SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
-    CALCULO();
+    //esp_task_wdt_reset();  //SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
+    CALCULO();//SE CALCULA EL PAR DE CLAVES QUE SE NECESITAN PARA PERMITIR EL ACCESO AL SISTEMA
   }
 
   if (STATUS_PAGE == 5) {
@@ -2495,7 +2500,6 @@ void loop() {
   if (STATUS_PAGE == 56) {
   
     STATUS_PAGE = 0;
-
     NUEVOMAC[0] = GOBIERNO.SUMERIO_MAC[RESTO][0];
     NUEVOMAC[1] = GOBIERNO.SUMERIO_MAC[RESTO][1];
     NUEVOMAC[2] = GOBIERNO.SUMERIO_MAC[RESTO][2];
@@ -2940,6 +2944,7 @@ void CARGADOR(fs::FS &fs, const char *path)  //ESTA FUNCION SE VA A ENCARGAR DE 
     //Serial.write(file.read());
     esp_task_wdt_reset();  //SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
     delay(10);
+    
     SINCEL = file.read();
     //Serial.printf("%s-------- ",SINCEL);
     CUENTA_LETRA++;
@@ -2952,7 +2957,7 @@ void CARGADOR(fs::FS &fs, const char *path)  //ESTA FUNCION SE VA A ENCARGAR DE 
     //____________________________________________________________
 
     if (SINCEL == "10") {
-      //Serial.printf("=NUEVA LINEA \n");
+      Serial.printf("=NUEVA LINEA \n");
       CARRY = 0;
       LINEA++;
       LAPIZ = 0;
@@ -2962,116 +2967,118 @@ void CARGADOR(fs::FS &fs, const char *path)  //ESTA FUNCION SE VA A ENCARGAR DE 
     //____________________________________________________________
 
     if (SINCEL == "32") {
-      //Serial.printf("=ESPACIO EN BLANCO \n");
+      Serial.printf("=ESPACIO EN BLANCO \n");
       LLEVO = LLEVO - 1;
       CARRY = 0;
     }
 
     //___________________________ACCION CUANDO CONSIGUE EL CODIGO ASCII DE LOS DOS PUNTOS_______________________________________________
     if (SINCEL == "58") {
-      //Serial.printf("=: , GRABADO %d  Y  %d, LLEVO %d  TIENE QUE REALIZAR LA FUNCION DE CALCULO: EL CALCULO DIO: %d\n",AUXILIAR[1],AUXILIAR[2],LLEVO,((AUXILIAR[1]*16)+AUXILIAR[2]));
+      Serial.printf("=: , GRABADO %d  Y  %d, LLEVO %d  TIENE QUE REALIZAR LA FUNCION DE CALCULO: EL CALCULO DIO: %d\n",AUXILIAR[1],AUXILIAR[2],LLEVO,((AUXILIAR[1]*16)+AUXILIAR[2]));
       CARRY = 0;
       PUNTERO = 0;
 
       permiso[LINEA][LAPIZ] = ((AUXILIAR[1] * 16) + AUXILIAR[2]);
       delay(10);  //se coloca un freno para evitar un desbordamiento de datos
       LAPIZ++;
+      AUXILIAR[1] = 0;//SE IMPLEMENTO ESTA MEJORA EL 1/7/2025
+      AUXILIAR[2] = 0;//SE IMPLEMENTO ESTA MEJORA EL 1/7/2025
     }
     //_______________________ANALIZANDO EL CODIGO ASCII DE LOS NÚMEROS___________________
     if (SINCEL == "48") {
       AUXILIAR[PUNTERO] = 0;
-      //Serial.printf("=0 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=0 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "49") {
       AUXILIAR[PUNTERO] = 1;
-      //Serial.printf("=1 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=1 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "50") {
       AUXILIAR[PUNTERO] = 2;
-      //Serial.printf("=2 ,  GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=2 ,  GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "51") {
       AUXILIAR[PUNTERO] = 3;
-      //Serial.printf("=3 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=3 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "52") {
       AUXILIAR[PUNTERO] = 4;
-      //Serial.printf("=4 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=4 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "53") {
       AUXILIAR[PUNTERO] = 5;
-      //Serial.printf("=5  GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=5  GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "54") {
       AUXILIAR[PUNTERO] = 6;
-      //Serial.printf("=6 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=6 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "55") {
       AUXILIAR[PUNTERO] = 7;
-      //Serial.printf("=7 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=7 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "56") {
       AUXILIAR[PUNTERO] = 8;
-      //Serial.printf("=8 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=8 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "57") {
       AUXILIAR[PUNTERO] = 9;
-      //Serial.printf("=9 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=9 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
     //**********************************************************************************************************************
     //________________________________ANALIZANDO CODIGO ASCII DE LAS LETRAS MAYÚSCULAS________________________________________
     if (SINCEL == "65") {
       AUXILIAR[PUNTERO] = 10;
-      //Serial.printf("=A , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=A , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "66") {
       AUXILIAR[PUNTERO] = 11;
-      //Serial.printf("=B , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=B , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "67") {
       AUXILIAR[PUNTERO] = 12;
-      //Serial.printf("=C , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=C , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "68") {
       AUXILIAR[PUNTERO] = 13;
-      //Serial.printf("=D , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=D , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "69") {
       AUXILIAR[PUNTERO] = 14;
-      //Serial.printf("=E , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=E , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "70") {
       AUXILIAR[PUNTERO] = 15;
-      //Serial.printf("=F , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      Serial.printf("=F , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
@@ -3082,43 +3089,45 @@ void CARGADOR(fs::FS &fs, const char *path)  //ESTA FUNCION SE VA A ENCARGAR DE 
     //_________________________________ANALIZANDO EL CODIGO ASCII DE LAS LETRAS MINÚSCULAS_______________________________________
 
     if (SINCEL == "97") {
-      //Serial.printf("=a \n");
+      Serial.printf("=a \n");
       AUXILIAR[PUNTERO] = 10;
       CARRY = 0;
     }
 
     if (SINCEL == "98") {
-      //Serial.printf("=b \n");
+      Serial.printf("=b \n");
       AUXILIAR[PUNTERO] = 11;
       CARRY = 0;
     }
 
     if (SINCEL == "99") {
-      //Serial.printf("=c \n");
+      Serial.printf("=c \n");
       AUXILIAR[PUNTERO] = 12;
       CARRY = 0;
     }
 
     if (SINCEL == "100") {
-      //Serial.printf("=d \n");
+      Serial.printf("=d \n");
       AUXILIAR[PUNTERO] = 13;
       CARRY = 0;
     }
 
     if (SINCEL == "101") {
-      //Serial.printf("=e \n");
+      Serial.printf("=e \n");
       AUXILIAR[PUNTERO] = 14;
       CARRY = 0;
     }
 
     if (SINCEL == "102") {
-      //Serial.printf("=f \n");
+      Serial.printf("=f \n");
       AUXILIAR[PUNTERO] = 15;
       CARRY = 0;
     }
+
+    
   }
   file.close();
-  //Serial.printf("cuenta letra dio:%d \n ",CUENTA_LETRA);
+  Serial.printf("cuenta letra dio:%d \n ",CUENTA_LETRA);
 }
 /*******************************************************************************************************************/
 void HERON()  //SE ENCARGA DE MOVER EL MOTOR
@@ -3325,7 +3334,7 @@ void ALEATORIO() {
 }
 /*******************************************/
 void SEND_MAC() {
-  //esp_task_wdt_reset();//SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
+  esp_task_wdt_reset();//SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
   ws.textAll(String("MAC1"));
   delay(180);
   ws.textAll(String(GOBIERNO.SUMERIO_MAC[RESTO][0]));
@@ -3409,6 +3418,7 @@ void CALCULO() {
   }
 }
 //***************************************************************************************************************************************
+//LA FUCION COMPROBAR() SE ENCARGA DE VERIFICAR SI LOS DATOS COLOCADOS EN EL FORMULARIO DE REGISTRO ESPECIFICAMENTE LOS TOKENS COINCIDEN CON EL CALCULO
 void COMPROBAR() {
   //TOKEN = 0;
 
@@ -3468,6 +3478,3 @@ void RANDOM()
   copa5 = random(1, 255);
   copa6 = random(1, 255);
 }
-
-
-
