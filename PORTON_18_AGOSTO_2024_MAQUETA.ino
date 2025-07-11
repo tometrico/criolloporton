@@ -1,6 +1,6 @@
 /*********************************************************************************************************************
   ELABORADO POR CESAR CRIOLLO 21 AGOSTO 2024
-  NUEVA VERSION 11 AGOSTO 2023
+  NUEVA VERSION 11 DE JULIO 2025
   ESTA VERSION FUNCIONA PERFECTA LAS OTRAS VERSIONES TIENEN UNA FALLA EN verifica_mac donde el k lo igualan a 4 se debe eliminar esa linea y todo fluye
   ESTA VERSION NO DEBE SER MODIFICADA POR MEDIDAS DE SEGURIDAD CUALQUIER CAMBIO DEBE REALIZARSE EN OTRO ARCHIVO
   EN ESTA VERSION LOGRAN COEXISTIR EL GRABADO DE DATOS EN SPIFFS Y LA LECTURA DE DATOS POR MODULO BLUETOOH
@@ -14,6 +14,7 @@ BIBLIOGRAFIA DE APOYO
   DATOS IMPORTANTES PARA LA MANIPULACION DE ARCHIVOS SPIFF EN https://github.com/me-no-dev/arduino-esp32fs-plugin 
   NOTAS;
   SE COLOCO esp_task_wdt_reset();//SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE DEBIDO A QUE DESBORDABA EL TIEMPO DE BUSQUEDA CUANDO ERAN MUCHOS CLIENTES
+  UBICACION DE ESTE PROYECTO EN https://github.com/tometrico/criolloporton/blob/main/PORTON_18_AGOSTO_2024_MAQUETA.ino#L1
 ********************************************************************************************************************/
 // IMPORTANDO LAS LIBRERIAS NECESARIAS
 #include <WiFi.h>
@@ -178,6 +179,19 @@ float RESPUESTA2 = 0;
 float DETERMINANTE = 0;
 uint8_t TOKEN = 0;
 float SIGNO = 1;
+
+String CEDULA;
+String NOMBRE;
+String APELLIDO;
+String EMAIL;
+String DIRECCION;
+String ESTADO;
+String MUNICIPIO;
+String PROFESION;
+int ANCLA=0;
+
+String bufferEntrada="";
+String bufferEmail = ""; // Acumulador temporal de datos PARA ALMACENAR EL EMAIL
 // SE CREA UN SERVIDOR WEB ASINCRONICO QUE SE COMUNICA POR EL PUERTO 80
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
@@ -484,21 +498,21 @@ const char paso_html[] PROGMEM = R"rawliteral(
 <script>
     let cu1=0 //este es el contador de posicion de la raqueta
     let cu2=0
-	let xcentro=750//centro de masa x de la pelota   230
-	let ycentro=110//centro de masa y de la pelota
-	let x_raqueta=800//posicion inicial raqueta1
-	let y_raqueta=80//posicion y de la raqueta1
-	let x_raqueta2=200//posicion inicial raqueta1
-	let y_raqueta2=80//posicion y de la raqueta1
+  let xcentro=750//centro de masa x de la pelota   230
+  let ycentro=110//centro de masa y de la pelota
+  let x_raqueta=800//posicion inicial raqueta1
+  let y_raqueta=80//posicion y de la raqueta1
+  let x_raqueta2=200//posicion inicial raqueta1
+  let y_raqueta2=80//posicion y de la raqueta1
 
-	let hit=0 //esta variable indica si hay un choque de la pelota con alguna raqueta
-	let time=0//esta variable lleva el tiempo de rrecorrido de la pelota 
-	let vect=-1
+  let hit=0 //esta variable indica si hay un choque de la pelota con alguna raqueta
+  let time=0//esta variable lleva el tiempo de rrecorrido de la pelota 
+  let vect=-1
   let con=0 //contador de apertura y cierre de la puerta;
-	var milesec=0
-	var seg=0
-	var min=0
-	var hor=0
+  var milesec=0
+  var seg=0
+  var min=0
+  var hor=0
 
 /**********************************SUBRRUTINA PARA EL LIENZO*******************************************/
 /******************************************************************************************/
@@ -508,91 +522,91 @@ const char paso_html[] PROGMEM = R"rawliteral(
             lienzo=elemento.getContext('2d'); 
             //lienzo.strokeRect(100,100,120,120); 
             var gradiente=lienzo.createLinearGradient(0,0,10,100); 
- 			gradiente.addColorStop(0.5, '#0000FF'); 
- 			gradiente.addColorStop(1, '#000000'); 
- 			lienzo.fillStyle=gradiente;
+      gradiente.addColorStop(0.5, '#0000FF'); 
+      gradiente.addColorStop(1, '#000000'); 
+      lienzo.fillStyle=gradiente;
             //lienzo.clearRect(120,120,80,80); 
             lienzo.clearRect(0,0,2500,1000);//SE LIMPIA EL LIENZO PARA EMPEZAR A DIBUJAR
-            lienzo.beginPath();//SE PREPARA LA ZONA DE TRABAJO DEL LIENZO	
-			ball();//se realiza dibujo de la pelota
+            lienzo.beginPath();//SE PREPARA LA ZONA DE TRABAJO DEL LIENZO 
+      ball();//se realiza dibujo de la pelota
       delay(3000);
-			lienzo.font="bold 10px verdana, sans-serif";
-			lienzo.font="bold 48px verdana, sans-serif";
-			lienzo.stroke(); 
+      lienzo.font="bold 10px verdana, sans-serif";
+      lienzo.font="bold 48px verdana, sans-serif";
+      lienzo.stroke(); 
             lienzo.fill();
 
         }
 
-		
-		function ball()
-		{
-			lienzo.clearRect(0,0,2500,1000);
+    
+    function ball()
+    {
+      lienzo.clearRect(0,0,2500,1000);
             lienzo.beginPath();
             lienzo.fillRect(x_raqueta,y_raqueta,10,100);//esta dibuja la raqueta movil
-			lienzo.fillRect(x_raqueta2,y_raqueta2,10,100);//esta dibuja la raqueta movil del contrincante		
-			lienzo.arc(xcentro,ycentro,20,0,Math.PI*2, false); //se dibuja la pelota
+      lienzo.fillRect(x_raqueta2,y_raqueta2,10,100);//esta dibuja la raqueta movil del contrincante   
+      lienzo.arc(xcentro,ycentro,20,0,Math.PI*2, false); //se dibuja la pelota
             lienzo.moveTo(xcentro+70,150); 
 
       if(con<=2)
         {
 
-		        if(vect==-1)
-					      {
-						      xcentro=xcentro+1
-					      }
+            if(vect==-1)
+                {
+                  xcentro=xcentro+1
+                }
 
-			      if(vect==1)
-					      {	
-						      xcentro=xcentro-1
-					      }
-			      colision();//se verifica si no hay choque de la pelota con alguna raqueta
+            if(vect==1)
+                { 
+                  xcentro=xcentro-1
+                }
+            colision();//se verifica si no hay choque de la pelota con alguna raqueta
         }
-	        
+          
         milesec++
-				if(milesec==1000)
-				{
-					seg++
-					if(seg==60)
-					{
-						min++
-							if(min==60)
-							{
-								hora++
-							}
-					}
-				}
-			lienzo.stroke(); 
+        if(milesec==1000)
+        {
+          seg++
+          if(seg==60)
+          {
+            min++
+              if(min==60)
+              {
+                hora++
+              }
+          }
+        }
+      lienzo.stroke(); 
             lienzo.fill();
-			//window.setTimeout(escena,1000)	
-		}
-		function colision()
-		{
-			hit=0
-			/***************************verifica choque raquetaA*********************/
-			if((ycentro-y_raqueta)>=0&&(ycentro-y_raqueta)<=100)
-			{
-				if((x_raqueta-xcentro)>=568&&(x_raqueta-xcentro)<=569)
-				{
-					hit=1
-					vect=-1
-					con=con+1
-				}	
-			}	
-			/***************************verifica choque raquetaB*********************/
-
-			if((ycentro-y_raqueta2)>=0&&(ycentro-y_raqueta2)<=100)
-			{
-				if((xcentro-x_raqueta2)>=580&&(xcentro-x_raqueta2)<=581)
-				{
-					hit=1
-					vect=1
+      //window.setTimeout(escena,1000)  
+    }
+    function colision()
+    {
+      hit=0
+      /***************************verifica choque raquetaA*********************/
+      if((ycentro-y_raqueta)>=0&&(ycentro-y_raqueta)<=100)
+      {
+        if((x_raqueta-xcentro)>=568&&(x_raqueta-xcentro)<=569)
+        {
+          hit=1
+          vect=-1
           con=con+1
-				}
-			}	
-		}	
+        } 
+      } 
+      /***************************verifica choque raquetaB*********************/
+
+      if((ycentro-y_raqueta2)>=0&&(ycentro-y_raqueta2)<=100)
+      {
+        if((xcentro-x_raqueta2)>=580&&(xcentro-x_raqueta2)<=581)
+        {
+          hit=1
+          vect=1
+          con=con+1
+        }
+      } 
+    } 
 
 /*********************************************************************************************/
-		setInterval(escena,0)
+    setInterval(escena,0)
 /********************************************************************************/
 window.addEventListener("load", escena, false);
 /**************************************************************************************************/
@@ -1060,7 +1074,6 @@ window.addEventListener("load", onLoad,false);
 //_____________________________________________________________________________________________________________________________
 
 char REGISTRAR[] PROGMEM = R"rawliteral(
-
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -1127,77 +1140,46 @@ char REGISTRAR[] PROGMEM = R"rawliteral(
      color:#8c8c8c;
      font-weight: bold;
    }
+
+
+input:invalid {
+border: 2px dashed red;
+}
+input:invalid:required {
+background-image: linear-gradient(to right, pink, lightgreen);
+}
+input:valid {
+border: 2px solid black;
+}
   </style>
 </head>
 <body>
   <div class="topnav">
     <h1>SOLICITUD DE CONFIRMACION NUEVO INGRESO</h1>
-
-<div class="card">
-     
-      <h2>ESTADO: <span id="state1">%STATE%</span></h2>
-      <h1 class="state">COORDENADAS
-      : <span id="mac1">%STATE%</span>
-      : <span id="punta2">%STATE%</span>
-      : <span id="punta3">%STATE%</span>
-      : <span id="punta4">%STATE%</span>
-      : <span id="punta5">%STATE%</span>
-      : <span id="punta6">%STATE%</span>
-    </div>
-
-
-<h1 id="password1">lectura:</h1>
-<h1 id="password2">lectura:</h1>
-<h1 id="password3">lectura:</h1>
-<h1 id="password4">lectura:</h1>
-<h1 id="password5">lectura:</h1>
-<h1 id="password6">lectura:</h1>
-<h2>macc</h2>
-
-<h1 id="password7">lectura:</h1>
-<h1 id="password8">lectura:</h1>
-<h1 id="password9">lectura:</h1>
-<h1 id="password10">lectura:</h1>
-<h1 id="password11">lectura:</h1>
-<h1 id="password12">lectura:</h1>
-
   </div>
   <div class="content">
-    <div class="card">
-    <!--     <form action='http://192.168.4.2/PORTON/index.php' method="POST">--> 
+    <div class="card"> 
 
-    <!--   <form action='http://192.168.4.2/PORTON/index2.php' method="POST">-->
-
-     <form action='http://192.168.4.1' method="POST">
-     
-      <h2>FORMULARIO</h2>
+      <h2>FORMULARIO DE REGISTRO</h2>
       <br>
-      <h2>CEDULA:<input type="int", name="CI" min="12" max="120" required ></h2>
-      <h2>NOMBRES:<input type="text", name="NOMBRE" required ></h2>
-      <h2>APELLIDOS:<input type="text", name="APELLIDO" required  ></h2>
-      <h2>TELEFONO:<input type="text", name="TELEFONO" ></h2>
-      <h2>ESTADO:<input type="text", name="ESTADO" required ></h2>
-      <h2>MUNICIPIO:<input type="text", name="MUNICIPIO" required  ></h2>
-      <h2>DIRECCION:<input type="text", name="DIRECCION" required ></h2>
-      <h2>CORREO:<input type="text", name="CORREO" required></h2>
-      <h2>PROFESION:<input type="text", name="PROFESION" required ></h2>
-<input type="hidden" , name="mac1" value="20" id="LA1">
-<input type="hidden" , name="mac2" value="20" id="LA2"> 
-<input type="hidden" , name="mac3" value="20" id="LA3">   
-<input type="hidden" , name="mac4" value="20" id="LA4">
-<input type="hidden" , name="mac5" value="20" id="LA5"> 
-<input type="hidden" , name="mac6" value="20" id="LA6">   
-
-      <h2><input type="submit" id="button"  class= "button", value="CONFIRMAR" ></h2>
+ <h2>CEDULA :<input type="text", name="CEDULA"  required , id=CEDULA></h2> 
+ <h2>NOMBRE:<input type="text", name="NOMBRE" required , id=NOMBRE></h2>    
+ <h2>APELLIDOS:<input type="text", name="APELLIDO" required , id=APELLIDO></h2>    
+ <h2>EMAIL:<input type="text", name="EMAIL" required , id=EMAIL></h2>    
+ <h2>DIRECCION:<input type="text", name="DIRECCION" required , id=DIRECCION></h2>
+ <h2>ESTADO:<input type="text", name="ESTADO" required , id=ESTADO></h2>        
+ <h2>MUNICIPIO:<input type="text", name="MUNICIPIO" required , id=MUNICIPIO></h2>    
+ <h2>PROFESION:<input type="text", name="PROFESION" required , id=PROFESION></h2>
+      <h2><input type="submit" class= "button" id="button" , value="CONFIRMAR" onClick="button_on()" ></h2>
     </form>  
-    </div>
+    </div>  
 <h1>enviados:</h1>
   </div>
-
+</div>
 <script>
   var gateway = `ws://${window.location.hostname}/ws`;
   var websocket;
-var puerta=1;
+var puerta=0;
 var macadd1=0;
 var macadd2=0;
 var LISTA=0;
@@ -1213,13 +1195,12 @@ var macadd10=0;
 var macadd11=0;
 var macadd12=0;
 
-
 let page=0;
 let tranca=0;
+let letras="desde mi esp32";
 
 
-//window.location.href = `http://192.168.4.1/NEGADO`
-
+   nombre1=document.getElementById("PASSWORD1"); 
   function initWebSocket() {
     console.log('Trying to open a WebSocket connection...');
     websocket = new WebSocket(gateway);
@@ -1235,196 +1216,84 @@ let tranca=0;
     setTimeout(initWebSocket, 2000);
   }
   function onMessage(event) {
-    var state;
-    let posicion=0;
-
-if(tranca==0)
-{
-
-if(puerta==1)
-{
-macadd1=event.data;  
-document.getElementById('password1').innerHTML = macadd1;
-document.getElementById("LA1").value= macadd1;
-}    
-
-if(puerta==2)
-{
-LISTA=event.data;  
-document.getElementById('password2').innerHTML = LISTA;
-document.getElementById("LA2").value= LISTA;
-}
-
-if(puerta==3)
-{
-  macadd3=event.data;
-document.getElementById('password3').innerHTML = macadd3;
-document.getElementById("LA3").value= macadd3;
-}
-
-if(puerta==4)
-{
-  macadd4=event.data;
-document.getElementById('password4').innerHTML = macadd4;
-document.getElementById("LA4").value= macadd4;
-}
-
-if(puerta==5)
-{
-  macadd5=event.data;
-document.getElementById('password5').innerHTML = macadd5;
-document.getElementById("LA5").value= macadd5;
-}
-
-if(puerta==6)
-{
-  macadd6=event.data;
-document.getElementById('password6').innerHTML = macadd6;
-document.getElementById("LA6").value= macadd6;
-}
-
-if(puerta==7)
-{
-macadd7=event.data;
-document.getElementById('password7').innerHTML = macadd7;
-document.getElementById("LA7").value= macadd7;
-}
-
-
-
-if(puerta==8)
-{
-  macadd8=event.data;
-document.getElementById('password8').innerHTML = macadd8;
-document.getElementById("LA8").value= macadd8;
-}
-
-
-if(puerta==9)
-{
-  macadd9=event.data;
-document.getElementById('password9').innerHTML = macadd9;
-document.getElementById("LA9").value= macadd9;
-}
-
-
-if(puerta==10)
-{
-  macadd10=event.data;
-  document.getElementById('password10').innerHTML = macadd10;
-
-  document.getElementById('password10').innerHTML = macadd10;
-
-document.getElementById("LA10").value= macadd10;
-}
-
-
-if(puerta==11)
-{
-  macadd11=event.data;
-  document.getElementById('password11').innerHTML = macadd11;
-
-document.getElementById("LA11").value= macadd11;
-}
-
-
-if(puerta==12)
-{
-  macadd12=event.data;
-  document.getElementById('password12').innerHTML = macadd12;
-document.getElementById("LA12").value= macadd12;
-tranca=1;
-}
-
-}
-
-puerta=0;
-
-document.getElementById('state1').innerHTML = event.data;
-    if (event.data == "1")
-    {
-     puerta=1;
-    }
-
-    if (event.data == "2")
-    {
-      puerta=2;
-    }
-
-    if (event.data == "3")
-    {
-      puerta=3;
-    }
-
-    if (event.data == "4")
-    {
-      puerta=4;
-    }
-
-  if (event.data == "5")
-    {
-      puerta=5; 
-    }
-
-  if (event.data == "6")
-    {
-      puerta=6; 
-    }
-
-
-  if (event.data == "7")
-    {
-      puerta=7; 
-    }
-
-  if (event.data == "8")
-    {
-      puerta=8; 
-    }
-
-  if (event.data == "9")
-    {
-      puerta=9; 
-    }
-
-  if (event.data == "10")
-    {
-      puerta=10; 
-    }
-
-  if (event.data == "11")
-    {
-      puerta=11; 
-    }
-
-  if (event.data == "12")
-    {
-      puerta=12; 
-    }
-
+  
+    document.getElementById('state1').innerHTML = event.data;
   }
 
   function onLoad(event) 
   {
     initWebSocket();
     initButton();
-    if(page==0)
-    {
-      page=1;
-      websocket.send(3);
-    }
   }
 
-  function initButton() {
-    document.getElementById('button').addEventListener('click', toggle);
+  function initButton()
+   {
+  document.getElementById('button').addEventListener('click', toggle);  
   }
-  function toggle(){
-    websocket.send('toggle');
-  }
+
+
+function toggle() {
+  // 🧾 Definimos una lista de objetos, cada uno representa un campo HTML que queremos enviar,
+  // junto con el prefijo que usará para identificar el dato en el receptor ESP32.
+  const campos = [
+    { id: "CEDULA",     prefijo: "CEDULA=" },
+    { id: "NOMBRE",     prefijo: "NOMBRE=" },
+    { id: "APELLIDO",   prefijo: "APELLIDO=" },
+    { id: "EMAIL",      prefijo: "EMAIL=" },
+    { id: "DIRECCION",  prefijo: "DIRECCION=" },
+    { id: "ESTADO",     prefijo: "ESTADO=" },
+    { id: "MUNICIPIO",  prefijo: "MUNICIPIO=" },
+    { id: "PROFESION",  prefijo: "PROFESION=" }
+  ];
+
+  // ⏱️ Definimos un tiempo base de espera entre cada envío, en milisegundos.
+  // Esto permite que el receptor tenga tiempo suficiente para procesar cada mensaje.
+  const delay = 300;
+
+  // 🔁 Recorremos cada uno de los campos definidos en el arreglo
+  campos.forEach((campo, index) => {
+
+    // ⏲️ Usamos setTimeout para espaciar cada envío según su posición en la lista
+    setTimeout(() => {
+      // 🧩 Obtenemos el valor actual del campo desde el DOM usando su ID
+      const elemento = document.getElementById(campo.id);
+
+      // 📦 Construimos el mensaje en formato "PREFIJO=VALOR", por ejemplo: "EMAIL=tecnico@correo.com"
+      const mensaje = campo.prefijo + elemento.value;
+
+      // 🌐 Enviamos el mensaje al servidor ESP32 a través del WebSocket
+      websocket.send(mensaje);
+
+      // 🐾 Opcional: puedes imprimirlo en la consola del navegador para depuración
+      console.log("Mensaje enviado:", mensaje);
+
+    }, delay * index); // 💡 Aumentamos el tiempo de espera para cada campo según su posición
+  });
+}
+
+function button_on() 
+{
+
+//window.location.href = '/';
+}
+
+function INTERPRETE(CARTA)
+{
+console.log("deberia mandar "+CARTA)
+
+const cadenaNumero = CARTA.toString(); // Convertimos el número a cadena
+//  const digitos = cadenaNumero.split('').map(Number); // Separamos los dígitos y los convertimos a números
+const digitos = cadenaNumero.split(''); // Separamos los dígitos y los convertimos a números
+const cantidadElementos = cadenaNumero.length;
+console.log('Dígitos del número', CARTA, ':', digitos);
+console.log(`El array tiene ${cantidadElementos} elementos.`);
+}
+
 window.addEventListener("load", onLoad,false);
 </script>
 </body>
 </html>
+
 )rawliteral";
 
 //____________________________________________________________________________________________________________________________________
@@ -1871,10 +1740,10 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) 
 
 {
-  Serial.println("------------------------------------------NUEVA ORDEN------------------------------------------------------");
+  Serial.printf("\n ------------------------------------------NUEVA ORDEN STATUS PAGE = %d------------------------------------------------------ \n",STATUS_PAGE);
  
   DIRECCION_IP = (client->remoteIP().toString().c_str());
-  Serial.printf("LECTURA DE  DIRECCION IP  %s\n", DIRECCION_IP);
+  //Serial.printf("LECTURA DE  DIRECCION IP  %s\n", DIRECCION_IP);
    esp_task_wdt_reset();  //SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
   identidad();
 
@@ -1882,7 +1751,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 
     case WS_EVT_CONNECT:
       //Serial.printf("CLIENTE WEBSOCKET  #%u CONECTADO %s\n", client->id(), client->remoteIP().toString().c_str());
-      Serial.printf("INTENTANDO ACCEDER A LA  PAGINA %d \n",STATUS_PAGE);
+      //Serial.printf("INTENTANDO ACCEDER A LA  PAGINA %d \n",STATUS_PAGE);
       if(STATUS_PAGE==4)
       {
        RANDOM();
@@ -1892,7 +1761,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       DIRECCION_IP = (client->remoteIP().toString().c_str());
       //
       //Serial.println("LISTA LA VERIFICACION DE USUARIOS");
-      Serial.println("---------------------------------------------------------------------------------");
+      //Serial.println("---------------------------------------------------------------------------------");
       /*
   Serial.printf("CLIENTE WEBSOCKET  #%u CONECTADO %s\n", client->id(), client->remoteIP().toString().c_str());
  Serial.printf("TRADUCIDO  %d\n", DIRECCION_IP);
@@ -1911,30 +1780,30 @@ Serial.print(DIRECCION_IP[10]);
 
       esp_wifi_ap_get_sta_list(&stationList);
       NUN_CLIENT = stationList.num;
-      Serial.printf("CANTIDAD DE CLIENTES CONECTADOS : %d \n", NUN_CLIENT);
+      //Serial.printf("CANTIDAD DE CLIENTES CONECTADOS : %d \n", NUN_CLIENT);
       //Serial.printf("LISTADO DE MACCADDRRESS CONECTADAS AL SISTEMA: \n");
       if (NUN_CLIENT > MEMORIA_CLIENTES)  //SI EL NUMERO DE CLIENTES CONECTADOS ES MAYOR AL ANTERIOR ES PORQUE HAY UNA NUEVA CONEXION
       {
         MEMORIA_CLIENTES = NUN_CLIENT;
         //LISTADO_IP[NUN_CLIENT]=DIRECCION_IP;//SE VAN GRABANDO EL LISTADO DE LAS IP QUE INGRESAN
-        Serial.println("---------------------------------------------------------------------------------");
-        Serial.println("ALGUIEN SE HA CONECTADO DEL SISTEMA :");
-        Serial.printf("CON DIRECCION IP  %s\n", DIRECCION_IP);
+        //Serial.println("---------------------------------------------------------------------------------");
+        //Serial.println("ALGUIEN SE HA CONECTADO DEL SISTEMA :");
+        //Serial.printf("CON DIRECCION IP  %s\n", DIRECCION_IP);
 
         GOBIERNO.SUMERIO_IP[NUN_CLIENT - 1] = DIRECCION_IP;
 
-        Serial.printf("CON MACC ADDRESS  ");
+        //Serial.printf("CON MACC ADDRESS  ");
         wifi_sta_info_t station = stationList.sta[NUN_CLIENT - 1];
         for (int i = 0; i < 6; i++) {
-          Serial.printf(" mac %d  ", station.mac[i]);
+          //Serial.printf(" mac %d  ", station.mac[i]);
 
           GOBIERNO.SUMERIO_MAC[NUN_CLIENT - 1][i] = station.mac[i];
           if (i < 5) {
-            Serial.print(":");
+            //Serial.print(":");
           }
           //esta parte verifica la macc con la matriz permiso
         }
-        Serial.printf("\n");
+        //Serial.printf("\n");
       }
 
 
@@ -1986,14 +1855,16 @@ Serial.print(DIRECCION_IP[10]);
 
       //DIRECCION_IP=(client->remoteIP().toString().c_str());
       Serial.println("---------------------------------------------------------------------------------");
-      Serial.printf("ALGUIEN A PULSADO UN BOTON FUE %s\n",  client->remoteIP().toString().c_str());
-      Serial.printf("LISTADO DE INFORMACION\n");
+      Serial.printf("\nEL MENSAJE FUE %s \n", data);
+      Serial.println("---------------------------------------------------------------------------------");
+      //Serial.printf("ALGUIEN A PULSADO UN BOTON FUE %s\n",  client->remoteIP().toString().c_str());
+      //Serial.printf("LISTADO DE INFORMACION\n");
       for (int i = 0; i < NUN_CLIENT; i++) {
-        Serial.printf("ip %s  con direccion macc    %d:%d:%d:%d:%d:%d   ACCESO TIPO :%d \n",GOBIERNO.SUMERIO_IP[i],GOBIERNO.SUMERIO_MAC[i][0],GOBIERNO.SUMERIO_MAC[i][1],GOBIERNO.SUMERIO_MAC[i][2],GOBIERNO.SUMERIO_MAC[i][3],GOBIERNO.SUMERIO_MAC[i][4],GOBIERNO.SUMERIO_MAC[i][5],GOBIERNO.SUMERIO_ACCESO[i]);
+        //Serial.printf("ip %s  con direccion macc    %d:%d:%d:%d:%d:%d   ACCESO TIPO :%d \n",GOBIERNO.SUMERIO_IP[i],GOBIERNO.SUMERIO_MAC[i][0],GOBIERNO.SUMERIO_MAC[i][1],GOBIERNO.SUMERIO_MAC[i][2],GOBIERNO.SUMERIO_MAC[i][3],GOBIERNO.SUMERIO_MAC[i][4],GOBIERNO.SUMERIO_MAC[i][5],GOBIERNO.SUMERIO_ACCESO[i]);
 
       if ((GOBIERNO.SUMERIO_MAC[i][0] == 0)&&(GOBIERNO.SUMERIO_MAC[i][1] == 0)&&(GOBIERNO.SUMERIO_MAC[i][2] == 0))  //ESTO SUCEDE CUANDO HAY ERROR DE LECTURA SE PROCEDE A RESETEAR AUTOMATICAMENTE EL CHIP ES UN PROBLEMA INTERNO DEL DISPOSITIVO
             {
-          Serial.printf("INCONGRUENCIA EN LA MAC ADDRES SE VA A RESETEAR");
+          //Serial.printf("INCONGRUENCIA EN LA MAC ADDRES SE VA A RESETEAR");
           ESP.restart();  //SE REALIZA UN RESETEO AUTOMATICO PARA CARGAR EL SISTEMA CON LOS NUEVOS DATOS
         }
 
@@ -2011,9 +1882,77 @@ Serial.print(DIRECCION_IP[10]);
 
 
       if (STATUS_PAGE == 5) {
-        Serial.println("AQUI DEBERIA GRABAR LOS DATOS EN EL CHIP ");
+        //Serial.println("AQUI DEBERIA GRABAR LOS DATOS EN EL CHIP ");
+        //Serial.printf("\nEL MENSAJE FUE %s", data);
+        //STATUS_PAGE = 56;
 
-        STATUS_PAGE = 56;
+AwsFrameInfo *info = (AwsFrameInfo *)arg;
+
+    // Acumulamos todos los fragmentos del mensaje (sin distinguir por ANCLA todavía)
+    for (size_t i = 0; i < len; i++) {
+      bufferEntrada += (char)data[i];
+    }
+
+    // Cuando el mensaje está completo
+    if (info->final) {
+      Serial.println("MENSAJE COMPLETO: " + bufferEntrada);
+
+      // Parseamos los campos desde el buffer
+      if (bufferEntrada.startsWith("CEDULA=")) 
+      {
+        CEDULA = bufferEntrada.substring(7);
+        Serial.println("CEDULA: " + CEDULA);
+      }
+
+      else if (bufferEntrada.startsWith("NOMBRE=")) 
+      {
+        NOMBRE = bufferEntrada.substring(7);
+        Serial.println("NOMBRE: " + NOMBRE);
+      }
+
+      else if (bufferEntrada.startsWith("APELLIDO=")) 
+      {
+        APELLIDO = bufferEntrada.substring(9);
+        Serial.println("APELLIDO: " + APELLIDO);
+      }
+       
+      else if (bufferEntrada.startsWith("EMAIL=")) 
+      {
+        EMAIL = bufferEntrada.substring(6);
+        Serial.println("EMAIL: " + EMAIL);
+      }
+      
+
+      else if (bufferEntrada.startsWith("DIRECCION=")) 
+      {
+        DIRECCION = bufferEntrada.substring(10);
+        Serial.println("DIRECCION: " + DIRECCION);
+      }
+
+      else if (bufferEntrada.startsWith("ESTADO=")) 
+      {
+        ESTADO = bufferEntrada.substring(7);
+        Serial.println("ESTADO: " + ESTADO);
+      }
+
+
+      else if (bufferEntrada.startsWith("MUNICIPIO=")) 
+      {
+        MUNICIPIO = bufferEntrada.substring(10);
+        Serial.println("MUNICIPIO: " + MUNICIPIO);
+      }
+
+      else if  (bufferEntrada.startsWith("PROFESION=")) 
+      {
+        PROFESION = bufferEntrada.substring(10);
+        Serial.println("PROFESION: " + PROFESION);
+        STATUS_PAGE=56;
+      }
+
+
+      bufferEntrada = ""; // Limpiar para el próximo mensaje
+    }
+        
       }
 
       if (GOBIERNO.SUMERIO_ACCESO[RESTO] == 1) {
@@ -2054,9 +1993,9 @@ Serial.print(DIRECCION_IP[10]);
 
 void CAPTURAR(size_t len, uint8_t *data) {
 
-  Serial.println("ANALISIS DE CAPTURA DE DATOS");
-  Serial.printf("\nEL MENSAJE FUE %s", data);
-  Serial.printf(" \n TAMAÑO DEL MENSAJE ES %d \n", len);
+  //Serial.println("ANALISIS DE CAPTURA DE DATOS");
+  //Serial.printf("\nEL MENSAJE FUE %s", data);
+  //Serial.printf(" \n TAMAÑO DEL MENSAJE ES %d \n", len);
 
   PUNTO = len + 1;
   SIGNO = 1;
@@ -2180,7 +2119,7 @@ void CAPTURAR(size_t len, uint8_t *data) {
 void identidad()  //ESTA FUNCION VERIFICA QUIENES SE HAN CONECTADO A LA RED
 {
   // Serial.println("viendo quien esta aqui);
-  Serial.printf("BUSCANDO QUIEN ESTA AQUI\n");
+  //Serial.printf("BUSCANDO QUIEN ESTA AQUI\n");
   for (int i = 0; i < NUN_CLIENT; i++) {
     //Serial.printf("ip %s  con direccion macc    %d:%d:%d:%d:%d:%d   ACCESO TIPO :%d \n",GOBIERNO.SUMERIO_IP[i],GOBIERNO.SUMERIO_MAC[i][0],GOBIERNO.SUMERIO_MAC[i][1],GOBIERNO.SUMERIO_MAC[i][2],GOBIERNO.SUMERIO_MAC[i][3],GOBIERNO.SUMERIO_MAC[i][4],GOBIERNO.SUMERIO_MAC[i][5],GOBIERNO.SUMERIO_ACCESO[i]);
     if ((GOBIERNO.SUMERIO_MAC[i][0] == 0)&&(GOBIERNO.SUMERIO_MAC[i][1] == 0)&&(GOBIERNO.SUMERIO_MAC[i][2] == 0))  //ESTO SUCEDE CUANDO HAY ERROR DE LECTURA SE PROCEDE A RESETEAR AUTOMATICAMENTE EL CHIP ES UN PROBLEMA INTERNO DEL DISPOSITIVO
@@ -2236,10 +2175,17 @@ void setup() {
     Serial.println("SPIFFS FALLA AL MONTAR LOS ARCHIVOS REVISE SISTEMA");
   }
 
-  //writeFile(SPIFFS, "/hello.txt", "Hola "); //NOTA IMPORTANTE CON ACTIVANDO ESTE CODIGO SE BORRA EL ARCHIVO HELLO.TXT CUANDO SEA NECESARIO O INCLUSIVE CUANDO SE COLOQUE UN CHIP VIRGEN QUE NO TENGA EL ARCHIVO
+ // writeFile(SPIFFS, "/hello.txt", "\n"); //NOTA IMPORTANTE CON ACTIVANDO ESTE CODIGO SE BORRA EL ARCHIVO HELLO.TXT CUANDO SEA NECESARIO O INCLUSIVE CUANDO SE COLOQUE UN CHIP VIRGEN QUE NO TENGA EL ARCHIVO
+
+  //writeFile(SPIFFS, "/USUARIOS.txt", ""); //NOTA IMPORTANTE CON ACTIVANDO ESTE CODIGO SE BORRA EL ARCHIVO HELLO.TXT CUANDO SEA NECESARIO O INCLUSIVE CUANDO SE COLOQUE UN CHIP VIRGEN QUE NO TENGA EL ARCHIVO
+
   listDir(SPIFFS, "/", 0);
   Serial.println("MOSTRANDO EL CONTENIDO DEL ARCHIVO HELLO.TXT");
   readFile(SPIFFS, "/hello.txt");
+  Serial.println("MOSTRANDO EL CONTENIDO DEL ARCHIVO USUARIOS.TXT");
+  readFile(SPIFFS, "/USUARIOS.txt");
+  
+ 
   //delay(5000);
   //esp_task_wdt_reset_user() ;
   CARGADOR(SPIFFS, "/hello.txt");  //SE GRABAN LOS DATOS DEL ARCHIVO INTERNO AL ARRAY PERMISO EL CUAL CONTIENE LOS CLIENTES AUTORIZADOS
@@ -2509,35 +2455,54 @@ void loop() {
 
     Serial.println("proceso de grabado en el chip ");
     Serial.printf("\n grabar %d:%d:%d:%d:%d:%d:", NUEVOMAC[0], NUEVOMAC[1], NUEVOMAC[2], NUEVOMAC[3], NUEVOMAC[4], NUEVOMAC[5]);
-    GRABAR_CHIP();
-    String S = SISTEMA;  // GetFile(SPIFFS, "/hello.txt");//
-    datalog = String(S);
-    Serial.print(datalog);
-    //_________________________________________________________________
-    //LIZADOANAR(datalog);
-    //_________________________________________________________________
-    appendFile(SPIFFS, "/hello.txt", datalog.c_str());
+  Serial.printf("\n grabar CEDULA : %s\n NOMBRE : %s\n APELLIDO : %s\n EMAIL: %s\n DIRECCION: %s\n ESTADO: %s\n MUNICIPIO : %s\n PROFESION: %s",
+  CEDULA.c_str(),
+  NOMBRE.c_str(),
+  APELLIDO.c_str(),
+  EMAIL.c_str(),
+  DIRECCION.c_str(),
+  ESTADO.c_str(),
+  MUNICIPIO.c_str(),
+  PROFESION.c_str()
+);
 
-    Serial.println("_____________PREPARADO PARA VERIFICAR ESTOS DATOS ____________________");
-    Serial.println("MOSTRANDO EL CONTENIDO DEL ARCHIVO HELLO.TXT");
-    readFile(SPIFFS, "/hello.txt");
+    
+    GRABAR_CHIP();
+    //String S = SISTEMA;  // GetFile(SPIFFS, "/hello.txt");//
+    //datalog = String(S);
+    
     GRABAR_MATRIZ();
     ESP.restart();  //SE REALIZA UN RESETEO AUTOMATICO PARA CARGAR EL SISTEMA CON LOS NUEVOS DATOS
   }
 }
 //*******************************************************************************************
 void GRABAR_CHIP() {
-  char linea;
-
+  //char linea;
+//ESTA ETAPA DEL CODIGO ESTA DEDICADA A GRABAR LA MAC ADDRESS DEL NUEVO USUARIO EN EL ARCHIVO hello.txt
   for (int j = 0; j <= 5; j++) {
     DECHEXA(NUEVOMAC[j], 16);
     SISTEMA = SISTEMA + ":";
   }
+  datalog =SISTEMA;
   SISTEMA = SISTEMA + '\n';
-  Serial.println("______________________________________________________________________________________________________");
-  Serial.println("mac addres  leida TRADUCIDA A HEXADECIMAL");
-  Serial.println(SISTEMA);
-  Serial.println("____________________LISTO__________________________________________________________________________________");
+  //Serial.println("______________________________________________________________________________________________________");
+  //Serial.println("mac addres  leida TRADUCIDA A HEXADECIMAL");
+  //Serial.println(SISTEMA);
+  //Serial.println("____________________LISTO__________________________________________________________________________________");
+    
+    Serial.print(datalog);
+    //_________________________________________________________________
+    //LIZADOANAR(datalog);
+    //_________________________________________________________________
+    appendFile(SPIFFS, "/hello.txt", SISTEMA.c_str());
+    //Serial.println("_____________PREPARADO PARA VERIFICAR ESTOS DATOS ____________________");
+    //Serial.println("MOSTRANDO EL CONTENIDO DEL ARCHIVO HELLO.TXT");
+    readFile(SPIFFS, "/hello.txt");
+    //ESTA ETAPA DEL CODIGO ESTA DEDICADA A GRABAR LOS DATOS GENERALES DEL USUARIO EL EL ARCHIVO USUARIOS.TXT    
+    datalog= '\n'+datalog+CEDULA+"/"+NOMBRE+"/"+APELLIDO+"/"+EMAIL+"/"+DIRECCION+"/"+ESTADO+"/"+MUNICIPIO+"/"+PROFESION;
+    appendFile(SPIFFS, "/USUARIOS.txt", datalog.c_str());  
+    Serial.println("MOSTRANDO EL CONTENIDO DEL ARCHIVO usuario.TXT");
+    readFile(SPIFFS, "/USUARIOS.txt");
 }
 //___________________________________________________________________________________________________________________
 void cliente_fuera() {
@@ -2957,7 +2922,7 @@ void CARGADOR(fs::FS &fs, const char *path)  //ESTA FUNCION SE VA A ENCARGAR DE 
     //____________________________________________________________
 
     if (SINCEL == "10") {
-      Serial.printf("=NUEVA LINEA \n");
+     // Serial.printf("=NUEVA LINEA \n");
       CARRY = 0;
       LINEA++;
       LAPIZ = 0;
@@ -2967,14 +2932,14 @@ void CARGADOR(fs::FS &fs, const char *path)  //ESTA FUNCION SE VA A ENCARGAR DE 
     //____________________________________________________________
 
     if (SINCEL == "32") {
-      Serial.printf("=ESPACIO EN BLANCO \n");
+      //Serial.printf("=ESPACIO EN BLANCO \n");
       LLEVO = LLEVO - 1;
       CARRY = 0;
     }
 
     //___________________________ACCION CUANDO CONSIGUE EL CODIGO ASCII DE LOS DOS PUNTOS_______________________________________________
     if (SINCEL == "58") {
-      Serial.printf("=: , GRABADO %d  Y  %d, LLEVO %d  TIENE QUE REALIZAR LA FUNCION DE CALCULO: EL CALCULO DIO: %d\n",AUXILIAR[1],AUXILIAR[2],LLEVO,((AUXILIAR[1]*16)+AUXILIAR[2]));
+      //Serial.printf("=: , GRABADO %d  Y  %d, LLEVO %d  TIENE QUE REALIZAR LA FUNCION DE CALCULO: EL CALCULO DIO: %d\n",AUXILIAR[1],AUXILIAR[2],LLEVO,((AUXILIAR[1]*16)+AUXILIAR[2]));
       CARRY = 0;
       PUNTERO = 0;
 
@@ -2987,98 +2952,98 @@ void CARGADOR(fs::FS &fs, const char *path)  //ESTA FUNCION SE VA A ENCARGAR DE 
     //_______________________ANALIZANDO EL CODIGO ASCII DE LOS NÚMEROS___________________
     if (SINCEL == "48") {
       AUXILIAR[PUNTERO] = 0;
-      Serial.printf("=0 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=0 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "49") {
       AUXILIAR[PUNTERO] = 1;
-      Serial.printf("=1 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=1 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "50") {
       AUXILIAR[PUNTERO] = 2;
-      Serial.printf("=2 ,  GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=2 ,  GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "51") {
       AUXILIAR[PUNTERO] = 3;
-      Serial.printf("=3 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=3 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "52") {
       AUXILIAR[PUNTERO] = 4;
-      Serial.printf("=4 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=4 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "53") {
       AUXILIAR[PUNTERO] = 5;
-      Serial.printf("=5  GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=5  GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "54") {
       AUXILIAR[PUNTERO] = 6;
-      Serial.printf("=6 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=6 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "55") {
       AUXILIAR[PUNTERO] = 7;
-      Serial.printf("=7 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=7 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "56") {
       AUXILIAR[PUNTERO] = 8;
-      Serial.printf("=8 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=8 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "57") {
       AUXILIAR[PUNTERO] = 9;
-      Serial.printf("=9 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=9 , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
     //**********************************************************************************************************************
     //________________________________ANALIZANDO CODIGO ASCII DE LAS LETRAS MAYÚSCULAS________________________________________
     if (SINCEL == "65") {
       AUXILIAR[PUNTERO] = 10;
-      Serial.printf("=A , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=A , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "66") {
       AUXILIAR[PUNTERO] = 11;
-      Serial.printf("=B , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=B , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "67") {
       AUXILIAR[PUNTERO] = 12;
-      Serial.printf("=C , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=C , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "68") {
       AUXILIAR[PUNTERO] = 13;
-      Serial.printf("=D , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=D , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "69") {
       AUXILIAR[PUNTERO] = 14;
-      Serial.printf("=E , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=E , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
     if (SINCEL == "70") {
       AUXILIAR[PUNTERO] = 15;
-      Serial.printf("=F , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
+      //Serial.printf("=F , GRABADO %d, LLEVO %d\n",AUXILIAR[PUNTERO],LLEVO);
       CARRY = 0;
     }
 
@@ -3089,37 +3054,37 @@ void CARGADOR(fs::FS &fs, const char *path)  //ESTA FUNCION SE VA A ENCARGAR DE 
     //_________________________________ANALIZANDO EL CODIGO ASCII DE LAS LETRAS MINÚSCULAS_______________________________________
 
     if (SINCEL == "97") {
-      Serial.printf("=a \n");
+      //Serial.printf("=a \n");
       AUXILIAR[PUNTERO] = 10;
       CARRY = 0;
     }
 
     if (SINCEL == "98") {
-      Serial.printf("=b \n");
+      //Serial.printf("=b \n");
       AUXILIAR[PUNTERO] = 11;
       CARRY = 0;
     }
 
     if (SINCEL == "99") {
-      Serial.printf("=c \n");
+      //Serial.printf("=c \n");
       AUXILIAR[PUNTERO] = 12;
       CARRY = 0;
     }
 
     if (SINCEL == "100") {
-      Serial.printf("=d \n");
+      //Serial.printf("=d \n");
       AUXILIAR[PUNTERO] = 13;
       CARRY = 0;
     }
 
     if (SINCEL == "101") {
-      Serial.printf("=e \n");
+      //Serial.printf("=e \n");
       AUXILIAR[PUNTERO] = 14;
       CARRY = 0;
     }
 
     if (SINCEL == "102") {
-      Serial.printf("=f \n");
+      //Serial.printf("=f \n");
       AUXILIAR[PUNTERO] = 15;
       CARRY = 0;
     }
@@ -3127,7 +3092,7 @@ void CARGADOR(fs::FS &fs, const char *path)  //ESTA FUNCION SE VA A ENCARGAR DE 
     
   }
   file.close();
-  Serial.printf("cuenta letra dio:%d \n ",CUENTA_LETRA);
+  //Serial.printf("cuenta letra dio:%d \n ",CUENTA_LETRA);
 }
 /*******************************************************************************************************************/
 void HERON()  //SE ENCARGA DE MOVER EL MOTOR
@@ -3415,6 +3380,8 @@ void CALCULO() {
 
     RESPUESTA2 = (((copa1 * copa8 * copa11) + (copa5 * copa12 * copa3) + (copa9 * copa4 * copa7)) - ((copa9 * copa8 * copa3) + (copa1 * copa12 * copa7) + (copa5 * copa4 * copa11))) / DETERMINANTE;
     Serial.printf("\n SEGUNDA SOLUCION : %f", RESPUESTA2);
+    Serial.printf("\n STATUS PAGE : %d", STATUS_PAGE);
+    
   }
 }
 //***************************************************************************************************************************************
@@ -3478,3 +3445,9 @@ void RANDOM()
   copa5 = random(1, 255);
   copa6 = random(1, 255);
 }
+//______________________________________________________________________________________________________________________________________________________________
+void COMUNICA()
+{
+Serial.printf("se ha recibido los siguientes datos del usuario");
+}
+//______________________________________________________________________________________________________________________________________________________________
