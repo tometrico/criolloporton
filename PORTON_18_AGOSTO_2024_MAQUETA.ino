@@ -41,7 +41,7 @@ File altura;
 // DESCRIPCIÓN DE LAS CREDENCIALES DE LA RED WIFI Y SU RESPECTIVA CONTRASEÑA
 const char *ssid = "DORAVILA2";      //SE ASIGNA EL NOMBRE A LA RED
 const char *password = "987654321";  //SE ASIGNA LA CONTRASEÑA A LA RED
-const int RELE = 4;                  //SE DEFINE EL RELE EN EL GPIO 4 LUEGO SE DECLARA  EN EL SETUP
+const int RELE = 2;                  //SE DEFINE EL RELE EN EL GPIO 4 LUEGO SE DECLARA  EN EL SETUP
 bool ledState = 0;                   //ESTADO DEL LED
 
 // ASIGNACION DE VARIABLES DEL SISTEMA
@@ -1154,6 +1154,12 @@ border: 2px solid black;
   </style>
 </head>
 <body>
+
+
+<div class="card">     
+      <h2>ESTADO: <span id="state1">%STATE%</span></h2>
+    </div>
+
   <div class="topnav">
     <h1>SOLICITUD DE CONFIRMACION NUEVO INGRESO</h1>
   </div>
@@ -1218,6 +1224,13 @@ let letras="desde mi esp32";
   function onMessage(event) {
   
     document.getElementById('state1').innerHTML = event.data;
+
+    if(event.data=="GRABADO_EN_SISTEMA")
+    {
+      window.location.href = '/';
+      }
+
+    
   }
 
   function onLoad(event) 
@@ -1279,14 +1292,14 @@ function button_on()
 
 function INTERPRETE(CARTA)
 {
-console.log("deberia mandar "+CARTA)
+//console.log("deberia mandar "+CARTA)
 
 const cadenaNumero = CARTA.toString(); // Convertimos el número a cadena
 //  const digitos = cadenaNumero.split('').map(Number); // Separamos los dígitos y los convertimos a números
 const digitos = cadenaNumero.split(''); // Separamos los dígitos y los convertimos a números
 const cantidadElementos = cadenaNumero.length;
-console.log('Dígitos del número', CARTA, ':', digitos);
-console.log(`El array tiene ${cantidadElementos} elementos.`);
+//console.log('Dígitos del número', CARTA, ':', digitos);
+//console.log(`El array tiene ${cantidadElementos} elementos.`);
 }
 
 window.addEventListener("load", onLoad,false);
@@ -1975,7 +1988,7 @@ AwsFrameInfo *info = (AwsFrameInfo *)arg;
         delay(35);
         ws.textAll(String("NO"));
         delay(35);
-       // TOKEN = 0;
+        TOKEN = 0;
       }
       handleWebSocketMessage(arg, data, len);
       //Serial.printf("CLIENTE WEBSOCKET  #%u mensaje %s\n", client->id(), client->remoteIP().toString().c_str());
@@ -2227,10 +2240,11 @@ void setup() {
   /***********************************************************************************************/
   SerialBT.begin("DORAVIA_ESP32");  //NOMBRE ASIGNADO AL MODULO BLUETOOTH DEL ESP 32
   /**********************************************************************************************/
+  /*
   //pinMode(ledPin, OUTPUT);
   //digitalWrite(ledPin, LOW);
   // Connect to Wi-Fi
-  /*
+  
   WiFi.begin(ssid, password);//EN MODO ESTACION
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -2297,9 +2311,6 @@ server.on("/URANIO", HTTP_GET, [](AsyncWebServerRequest *request) {
    STATUS_PAGE = 6;
     //TOKEN = 0;
   });
-
-
-
 
   server.begin();  //INICIA EL SERVIDOR
   //ESP.wdtDisable();
@@ -2371,8 +2382,9 @@ void loop() {
     //Serial.printf("DIRECCION MAC_ADDRESS: %d:%d:%d:%d:%d:%d \n",GOBIERNO.SUMERIO_MAC[RESTO][0],GOBIERNO.SUMERIO_MAC[RESTO][1],GOBIERNO.SUMERIO_MAC[RESTO][2],GOBIERNO.SUMERIO_MAC[RESTO][3],GOBIERNO.SUMERIO_MAC[RESTO][4],GOBIERNO.SUMERIO_MAC[RESTO][5]);
 
     esp_task_wdt_reset();  //SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
+    
+    /*************************************************
     //SEND_MAC();
-    /*************************************************/
     //esp_task_wdt_reset();//SE RESETEA EL WATCHDOG TIMER ANTES DE QUE ESTE EXPIRE
     ws.textAll(String(1));
     delay(180);
@@ -2416,31 +2428,33 @@ void loop() {
 /************************************************/
     //  delay(6000);
     //Serial.println("_____________PREPARADO PARA GRABAR ESTOS DATOS ____________________");
+/*
     if (caja == 53) {
-      NUEVOMAC[0] = GOBIERNO.SUMERIO_MAC[RESTO][0];
-      NUEVOMAC[1] = GOBIERNO.SUMERIO_MAC[RESTO][1];
-      NUEVOMAC[2] = GOBIERNO.SUMERIO_MAC[RESTO][2];
-      NUEVOMAC[3] = GOBIERNO.SUMERIO_MAC[RESTO][3];
-      NUEVOMAC[4] = GOBIERNO.SUMERIO_MAC[RESTO][4];
-      NUEVOMAC[5] = GOBIERNO.SUMERIO_MAC[RESTO][5];
+      //NUEVOMAC[0] = GOBIERNO.SUMERIO_MAC[RESTO][0];
+      //NUEVOMAC[1] = GOBIERNO.SUMERIO_MAC[RESTO][1];
+      //NUEVOMAC[2] = GOBIERNO.SUMERIO_MAC[RESTO][2];
+      //NUEVOMAC[3] = GOBIERNO.SUMERIO_MAC[RESTO][3];
+      //NUEVOMAC[4] = GOBIERNO.SUMERIO_MAC[RESTO][4];
+      //NUEVOMAC[5] = GOBIERNO.SUMERIO_MAC[RESTO][5];
 
-      Serial.println("proceso de grabado en el chip ");
-      Serial.printf("\n grabar %d:%d:%d:%d:%d:%d:", NUEVOMAC[0], NUEVOMAC[1], NUEVOMAC[2], NUEVOMAC[3], NUEVOMAC[4], NUEVOMAC[5]);
-      caja = 0;
-      GRABAR_CHIP();
-      String S = SISTEMA;  // GetFile(SPIFFS, "/hello.txt");//
-      datalog = String(S);
-      Serial.print(datalog);
+      //Serial.println("proceso de grabado en el chip ");
+      //Serial.printf("\n grabar %d:%d:%d:%d:%d:%d:", NUEVOMAC[0], NUEVOMAC[1], NUEVOMAC[2], NUEVOMAC[3], NUEVOMAC[4], NUEVOMAC[5]);
+      //caja = 0;
+      //GRABAR_CHIP();
+      //String S = SISTEMA;  // GetFile(SPIFFS, "/hello.txt");//
+      //datalog = String(S);
+      //Serial.print(datalog);
       //_________________________________________________________________
       //_________________________________________________________________
-      appendFile(SPIFFS, "/hello.txt", datalog.c_str());
+      //appendFile(SPIFFS, "/hello.txt", datalog.c_str());
 
-      Serial.println("_____________PREPARADO PARA VERIFICAR ESTOS DATOS ____________________");
-      Serial.println("MOSTRANDO EL CONTENIDO DEL ARCHIVO HELLO.TXT");
-      readFile(SPIFFS, "/hello.txt");
-      GRABAR_MATRIZ();
-      ESP.restart();  //SE REALIZA UN RESETEO AUTOMATICO PARA CARGAR EL SISTEMA CON LOS NUEVOS DATOS
+      //Serial.println("_____________PREPARADO PARA VERIFICAR ESTOS DATOS ____________________");
+      //Serial.println("MOSTRANDO EL CONTENIDO DEL ARCHIVO HELLO.TXT");
+      //readFile(SPIFFS, "/hello.txt");
+      //GRABAR_MATRIZ();
+      //ESP.restart();  //SE REALIZA UN RESETEO AUTOMATICO PARA CARGAR EL SISTEMA CON LOS NUEVOS DATOS
     }
+  */  
   }
 
   if (STATUS_PAGE == 56) {
@@ -2465,14 +2479,18 @@ void loop() {
   MUNICIPIO.c_str(),
   PROFESION.c_str()
 );
-
     
     GRABAR_CHIP();
     //String S = SISTEMA;  // GetFile(SPIFFS, "/hello.txt");//
     //datalog = String(S);
     
     GRABAR_MATRIZ();
-    ESP.restart();  //SE REALIZA UN RESETEO AUTOMATICO PARA CARGAR EL SISTEMA CON LOS NUEVOS DATOS
+     ws.textAll(String(1));
+        delay(35);
+        ws.textAll(String("GRABADO_EN_SISTEMA"));
+        delay(35);
+       
+    //ESP.restart();  //SE REALIZA UN RESETEO AUTOMATICO PARA CARGAR EL SISTEMA CON LOS NUEVOS DATOS
   }
 }
 //*******************************************************************************************
@@ -3450,4 +3468,4 @@ void COMUNICA()
 {
 Serial.printf("se ha recibido los siguientes datos del usuario");
 }
-//______________________________________________________________________________________________________________________________________________________________
+//________________________________________________________________________________
